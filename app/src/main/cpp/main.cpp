@@ -290,13 +290,25 @@ public:
             // Moving Forward
             if (GetTouchY(1) < rightCenterScreenPos.y)
             {
-                //vf3Camera.z += 8.0f * fElapsedTime;
+                vf3Camera.z += 8.0f * fElapsedTime;
             }
 
             // Moving Backward
             if (GetTouchY(1) > rightCenterScreenPos.y)
             {
-                //vf3Camera.z -= 8.0f * fElapsedTime;
+                vf3Camera.z -= 8.0f * fElapsedTime;
+            }
+
+            // Moving UP
+            if (GetTouchY(1) < rightCenterScreenPos.y)
+            {
+                //vf3Camera.y -= 0.5f * fElapsedTime;
+            }
+
+            // Moving Down
+            if (GetTouchY(1) > rightCenterScreenPos.y)
+            {
+                //vf3Camera.y += 0.5f * fElapsedTime;
             }
 
         }
@@ -309,28 +321,28 @@ public:
 
             // We know the Right Center point we need to compare our positions
 
-            // Moving Left
+            // Looking Left
             if (GetTouchX(0) > rightCenterScreenPos.x)
             {
                 vf3LookDir.x -= 0.5f * fElapsedTime;
             }
 
-            // Moving Right
+            // Looking Right
             if (GetTouchX(0) < rightCenterScreenPos.x)
             {
-                vf3LookDir.x += 0.5f * fElapsedTime;
+                vf3LookDir.x+= 0.5f * fElapsedTime;
             }
 
-            // Moving Forward
+            // Looking Up
             if (GetTouchY(0) < rightCenterScreenPos.y)
             {
-                //vf3Camera.z += 8.0f * fElapsedTime;
+                //vf3LookDir.y -= 0.5f * fElapsedTime;
             }
 
-            // Moving Backward
+            // Looking Down
             if (GetTouchY(0) > rightCenterScreenPos.y)
             {
-                //vf3Camera.z -= 8.0f * fElapsedTime;
+                //vf3LookDir.y += 0.5f * fElapsedTime;
             }
 
         }
@@ -341,7 +353,7 @@ public:
 
         // Still not sure why these are reversed... TODO: Check engine code
         m2.rotateY(vf3LookDir.x);
-        //m2.rotateX(vf3LookDir.x);
+        //m2.rotateX(vf3LookDir.y);
         //m2.rotateZ(vf3Camera.z);
 
 
