@@ -70,11 +70,13 @@ public:
     /* Sprites */
     olc::Sprite* sprTouchTester = nullptr;
     olc::Sprite* sprOLCPGEMobLogo = nullptr;
+    olc::Sprite* sprLandScape = nullptr;
     /* END Sprites*/
 
     /* Decals */
     olc::Decal* decTouchTester = nullptr;
     olc::Decal* decOLCPGEMobLogo = nullptr;
+    olc::Decal* decLandScape = nullptr;
     /* End Decals */
 
 
@@ -110,6 +112,8 @@ public:
 
 public:
     bool OnUserCreate() override {
+
+        auto test = float(GetScreenSize().y);
 
         float fAspect = float(GetScreenSize().y) / float(GetScreenSize().x);
         float S = 1.0f / (tan(3.14159f * 0.25f));
@@ -170,6 +174,8 @@ public:
         sprOLCPGEMobLogo = new olc::Sprite("images/olcpgemobilelogo.png");
         decOLCPGEMobLogo = new olc::Decal(sprOLCPGEMobLogo);
 
+        sprLandScape = new olc::Sprite("images/TestLandScape.jpg");
+        decLandScape = new olc::Decal(sprLandScape);
 
         return true;
     }
@@ -277,7 +283,8 @@ public:
 
         HW3D_DrawLineBox((matView * matWorld).m, { 0.0f, 0.0f, 0.0f }, { 10.0f, 10.0f, 10.0f }, olc::YELLOW);
 
-        HW3D_DrawObject((matView * matWorld).m, nullptr, meshMountain.layout, meshMountain.pos, meshMountain.uv, meshMountain.col);
+        // TODO: Add mesh decal (nullptr)
+        HW3D_DrawObject((matView * matWorld).m, decLandScape, meshMountain.layout, meshMountain.pos, meshMountain.uv, meshMountain.col);
 
         // Make sure we have not botched 2D Decals
         DrawDecal(GetMousePos(), gfx1.Decal());
@@ -295,11 +302,6 @@ public:
             nStep += 10.0f;
         }
         vecMessages.clear();
-
-
-
-
-
 
         // Draw Logo
         DrawDecal({ 5.0f, (float)ScreenHeight() - 100 }, decOLCPGEMobLogo, { 0.5f, 0.5f });
