@@ -60,6 +60,17 @@ public:
     olc::utils::hw3d::mesh meshMountain;
     olc::Renderable gfx1;
 
+    olc::vf3d vf3Renederer;
+
+    olc::vf3d  vf3Up = {0.0f, 1.0f, 0.0f};              // vf3d up direction
+    olc::vf3d  vf3Camera = {15.0f, 15.0f, -4.0f};       // vf3d camera direction
+    olc::vf3d  vf3LookDir = { 0.0f, 0.0f, 1.0f };       // vf3d look direction
+    olc::vf3d vSun = { -500.0f, -500.0f , -500.0f };    // vf3D sun direction
+
+    float fYaw = 0.0f;		// FPS Camera rotation in XZ plane
+    float fTheta = 0.0f;	// Spins World transform
+
+
     /* Vectors */
     std::vector<std::string> vecMessages;
     /* END Vectors*/
@@ -112,8 +123,6 @@ public:
 
 public:
     bool OnUserCreate() override {
-
-        auto test = float(GetScreenSize().y);
 
         float fAspect = float(GetScreenSize().y) / float(GetScreenSize().x);
         float S = 1.0f / (tan(3.14159f * 0.25f));
@@ -174,7 +183,7 @@ public:
         sprOLCPGEMobLogo = new olc::Sprite("images/olcpgemobilelogo.png");
         decOLCPGEMobLogo = new olc::Decal(sprOLCPGEMobLogo);
 
-        sprLandScape = new olc::Sprite("images/TestLandScape.jpg");
+        sprLandScape = new olc::Sprite("images/MountainTest1.jpg");
         decLandScape = new olc::Decal(sprLandScape);
 
         return true;
@@ -207,6 +216,8 @@ public:
 
     float fThetaX = 0;
     float fThetaY = 0;
+    float fThetaZ = 0;
+    //float fThetaY = 0;
 
     float fLightTime = 0.0f;
 
@@ -235,6 +246,9 @@ public:
         sMessage = sAppName + " - FPS: " + std::to_string(nFrameCount);
         vecMessages.push_back(sMessage);
 
+        sMessage = "Sound Copyright: https://pixabay.com/users/shidenbeatsmusic-25676252/";
+        vecMessages.push_back(sMessage);
+
         sMessage = "---";
         vecMessages.push_back(sMessage);
 
@@ -246,13 +260,64 @@ public:
         vecMessages.push_back(defaultTouch);
 
         // New code:
-        //fThetaX += fElapsedTime * 0.5f;
-        fThetaY += fElapsedTime * 1.3f;
-
         olc::mf4d m1, m2, m3, m4;
 
-        m1.rotateY(fThetaY);
-        m2.rotateX(fThetaX);
+        // Manage Touch points
+        olc::vi2d centreScreenPos = GetScreenSize();
+        centreScreenPos.x = centreScreenPos.x / 2;
+        centreScreenPos.y = centreScreenPos.y / 2;
+        DrawTargetPointer(centreScreenPos, 50, 10);
+
+        olc::vi2d leftCenterScreenPos = GetScreenSize();
+        leftCenterScreenPos.x = leftCenterScreenPos.x / 100 * 25; //TODO remove magic numbers
+        leftCenterScreenPos.y = leftCenterScreenPos.y / 2;
+        DrawTargetPointer(leftCenterScreenPos, 50, 10, olc::GREEN);
+
+        olc::vi2d rightCenterScreenPos = GetScreenSize();
+        rightCenterScreenPos.x = rightCenterScreenPos.x / 100 * 75;
+        rightCenterScreenPos.y = rightCenterScreenPos.y / 2;
+        DrawTargetPointer(rightCenterScreenPos, 50, 10, olc::RED);
+
+
+
+// Direction
+        if (GetTouch(0).bHeld)
+        {
+            DrawLine(rightCenterScreenPos, GetTouchPos(1), olc::RED, 0xF0F0F0F0);
+            DrawTargetPointer(GetTouchPos(1), 50, 10, olc::RED);
+
+            // We know the Right Center point we need to compare our positions
+
+            // Moving Left
+            if (GetTouchX(0) > rightCenterScreenPos.x)
+            {
+                //m1.rotateX(fThetaX -= 0.5f * fElapsedTime); // Travel Along X-Axis
+
+            }
+
+            // Moving Right
+            if (GetTouchX(0) < rightCenterScreenPos.x)
+            {
+                //m1.rotateX(fThetaX  += 0.5f * fElapsedTime);	// Travel Along X-Axis
+            }
+
+            // Moving Up
+            if (GetTouchY(0) < rightCenterScreenPos.y)
+            {
+                m1.rotateY(fThetaY += 0.5f * fElapsedTime);	// Travel Upwards
+            }
+
+            // Moving Down
+            if (GetTouchY(0) > rightCenterScreenPos.y)
+            {
+                m1.rotateY(fThetaY -= 0.5f * fElapsedTime);	// Travel Downwards
+            }
+
+        }
+
+
+
+        m2.rotateZ(fTheta);
 
         m3.translate(0.0, -4.0, -10.0);
         matWorld = m3 * m1 * m2;
@@ -290,6 +355,7 @@ public:
         DrawDecal(GetMousePos(), gfx1.Decal());
 
         // End new code
+
 
 
 

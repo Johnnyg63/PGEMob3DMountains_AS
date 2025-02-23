@@ -1,6 +1,13 @@
 # OLC Pixel Game Engine Mobile 2.2.X for Android Studio
 # 3D Functions for PGE Mobile 2.0 testing
 <p>
+CopyRights:
+    <a href="https://pixabay.com/users/shidenbeatsmusic-25676252/" >Birds' forest Sound Copyright <b>ShidenBeatsMusic</b></a>
+<a href="https://www.renderosity.com/gallery/items/2486451/mountain-terrain-top-down" >Mountain Terrain - top down image Copyright <b>ThomasMacCallum</b></a>
+    
+    <i>Images and Sounds used here are for educational purposes only </i>
+</p>
+<p>
 	<b>Supports: Windows, Linux and Apple MAC</b><br/>
 	<b>This project supports Android devices SDK 21 --> 34 and beyond</b>
 </p>
