@@ -63,9 +63,10 @@ public:
 
     olc::vf3d vf3Renederer;
 
-    olc::vf3d  vf3Up = {0.0f, 1.0f, 0.0f};              // vf3d up direction
-    olc::vf3d  vf3Camera = {0.0f, 0.0f, 0.0f};       // vf3d camera direction
-    olc::vf3d  vf3LookDir = { 0.0f, 0.0f, 1.0f };       // vf3d look direction
+    olc::vf3d vf3Up = {0.0f, 1.0f, 0.0f};           // vf3d up direction
+    olc::vf3d vf3Camera = {0.0f, 0.0f, 0.0f};       // vf3d camera direction
+    olc::vf3d vf3LookDir = { 0.0f, 0.0f, 1.0f };    // vf3d look direction
+    olc::vf3d vf3Forward = {0.0f, 0.0f, 0.0f};      // vf3d Forward direction
     olc::vf3d vSun = { -500.0f, -500.0f , -500.0f };    // vf3D sun direction
 
     float fYaw = 0.0f;		// FPS Camera rotation in XZ plane
@@ -300,6 +301,7 @@ public:
             }
 
             // Moving UP
+            // TODO: Add code so that only when movement is > 20% execute
             if (GetTouchY(1) < rightCenterScreenPos.y)
             {
                 //vf3Camera.y -= 0.5f * fElapsedTime;
@@ -322,25 +324,25 @@ public:
             // We know the Right Center point we need to compare our positions
 
             // Looking Left
-            if (GetTouchX(0) > rightCenterScreenPos.x)
+            if (GetTouchX(0) > leftCenterScreenPos.x)
             {
                 vf3LookDir.x -= 0.5f * fElapsedTime;
             }
 
             // Looking Right
-            if (GetTouchX(0) < rightCenterScreenPos.x)
+            if (GetTouchX(0) < leftCenterScreenPos.x)
             {
                 vf3LookDir.x+= 0.5f * fElapsedTime;
             }
 
             // Looking Up
-            if (GetTouchY(0) < rightCenterScreenPos.y)
+            if (GetTouchY(0) < leftCenterScreenPos.y)
             {
                 //vf3LookDir.y -= 0.5f * fElapsedTime;
             }
 
             // Looking Down
-            if (GetTouchY(0) > rightCenterScreenPos.y)
+            if (GetTouchY(0) > leftCenterScreenPos.y)
             {
                 //vf3LookDir.y += 0.5f * fElapsedTime;
             }
@@ -350,6 +352,7 @@ public:
         // Order in import
 
         m1.translate(vf3Camera); // first we move to the new location
+        m2.translate(vf3Camera); // Move the look position to the camera position
 
         // Still not sure why these are reversed... TODO: Check engine code
         m2.rotateY(vf3LookDir.x);
