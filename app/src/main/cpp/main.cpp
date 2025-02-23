@@ -1,3 +1,4 @@
+
 //////////////////////////////////////////////////////////////////
 // Pixel Game Engine Mobile Release 2.2.X,                      //
 // John Galvin aka Johnngy63: 10-Jan-2025                       //
@@ -63,7 +64,7 @@ public:
     olc::vf3d vf3Renederer;
 
     olc::vf3d  vf3Up = {0.0f, 1.0f, 0.0f};              // vf3d up direction
-    olc::vf3d  vf3Camera = {15.0f, 15.0f, -4.0f};       // vf3d camera direction
+    olc::vf3d  vf3Camera = {0.0f, 0.0f, 0.0f};       // vf3d camera direction
     olc::vf3d  vf3LookDir = { 0.0f, 0.0f, 1.0f };       // vf3d look direction
     olc::vf3d vSun = { -500.0f, -500.0f , -500.0f };    // vf3D sun direction
 
@@ -175,7 +176,7 @@ public:
             }
         }
 
-       Clear(olc::BLUE);
+        Clear(olc::BLUE);
 
         sprTouchTester = new olc::Sprite("images/north_south_east_west_logo.png");
         decTouchTester = new olc::Decal(sprTouchTester);
@@ -279,47 +280,72 @@ public:
         DrawTargetPointer(rightCenterScreenPos, 50, 10, olc::RED);
 
 
-
-// Direction
-        if (GetTouch(0).bHeld)
+        // Touch 1 handles forward and backwards only
+        if (GetTouch(1).bHeld)
         {
             DrawLine(rightCenterScreenPos, GetTouchPos(1), olc::RED, 0xF0F0F0F0);
             DrawTargetPointer(GetTouchPos(1), 50, 10, olc::RED);
+
+
+            // Moving Forward
+            if (GetTouchY(1) < rightCenterScreenPos.y)
+            {
+                //vf3Camera.z += 8.0f * fElapsedTime;
+            }
+
+            // Moving Backward
+            if (GetTouchY(1) > rightCenterScreenPos.y)
+            {
+                //vf3Camera.z -= 8.0f * fElapsedTime;
+            }
+
+        }
+
+        // Touch zeros (single touch) handles direction
+        if (GetTouch(0).bHeld)
+        {
+            DrawLine(leftCenterScreenPos, GetTouchPos(), olc::GREEN, 0xF0F0F0F0);
+            DrawTargetPointer(GetTouchPos(), 50, 10, olc::GREEN);
 
             // We know the Right Center point we need to compare our positions
 
             // Moving Left
             if (GetTouchX(0) > rightCenterScreenPos.x)
             {
-                //m1.rotateX(fThetaX -= 0.5f * fElapsedTime); // Travel Along X-Axis
-
+                vf3LookDir.x -= 0.5f * fElapsedTime;
             }
 
             // Moving Right
             if (GetTouchX(0) < rightCenterScreenPos.x)
             {
-                //m1.rotateX(fThetaX  += 0.5f * fElapsedTime);	// Travel Along X-Axis
+                vf3LookDir.x += 0.5f * fElapsedTime;
             }
 
-            // Moving Up
+            // Moving Forward
             if (GetTouchY(0) < rightCenterScreenPos.y)
             {
-                m1.rotateY(fThetaY += 0.5f * fElapsedTime);	// Travel Upwards
+                //vf3Camera.z += 8.0f * fElapsedTime;
             }
 
-            // Moving Down
+            // Moving Backward
             if (GetTouchY(0) > rightCenterScreenPos.y)
             {
-                m1.rotateY(fThetaY -= 0.5f * fElapsedTime);	// Travel Downwards
+                //vf3Camera.z -= 8.0f * fElapsedTime;
             }
 
         }
 
+        // Order in import
+
+        m1.translate(vf3Camera); // first we move to the new location
+
+        // Still not sure why these are reversed... TODO: Check engine code
+        m2.rotateY(vf3LookDir.x);
+        //m2.rotateX(vf3LookDir.x);
+        //m2.rotateZ(vf3Camera.z);
 
 
-        m2.rotateZ(fTheta);
-
-        m3.translate(0.0, -4.0, -10.0);
+        m3.translate(0.0, -10.0, 0.0);
         matWorld = m3 * m1 * m2;
 
         ClearBuffer(olc::CYAN, true);
@@ -387,7 +413,7 @@ public:
         // It depends on why the OS is pausing your game tho, Phone call, etc
         // It is best to save a simple Struct of your settings, i.e. current level, player position etc
         // NOTE: The OS can terminate all of your data, pointers, sprites, layers can be freed
-        // Therefore do not save sprites, pointers etc 
+        // Therefore do not save sprites, pointers etc
 
         // Example 1: vector
         vecLastState.clear();
@@ -406,7 +432,7 @@ public:
 
         std::string dataPath(internalPath);
 
-        // internalDataPath points directly to the files/ directory                                  
+        // internalDataPath points directly to the files/ directory
         std::string lastStateFile = dataPath + "/lastStateFile.bin";
 
         std::ofstream file(lastStateFile, std::ios::out | std::ios::binary);
@@ -428,7 +454,7 @@ public:
 
     void OnRestoreStateRequested() override
     {
-        // This will fire every time your game launches 
+        // This will fire every time your game launches
         // OnUserCreate will be fired again as the OS may have terminated all your data
 
 #if defined(__ANDROID__)
