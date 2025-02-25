@@ -61,13 +61,10 @@ public:
     olc::utils::hw3d::mesh meshMountain;
     olc::Renderable gfx1;
 
-    olc::vf3d vf3Renederer;
-
     olc::vf3d vf3Up = {0.0f, 1.0f, 0.0f};           // vf3d up direction
     olc::vf3d vf3Camera = {0.0f, 0.0f, 0.0f};       // vf3d camera direction
     olc::vf3d vf3LookDir = { 0.0f, 0.0f, 1.0f };    // vf3d look direction
     olc::vf3d vf3Forward = {0.0f, 0.0f, 0.0f};      // vf3d Forward direction
-    olc::vf3d vSun = { -500.0f, -500.0f , -500.0f };    // vf3D sun direction
 
     float fYaw = 0.0f;		// FPS Camera rotation in XZ plane
     float fTheta = 0.0f;	// Spins World transform
@@ -110,6 +107,12 @@ public:
 
     // The instance of the audio engine, no fancy config required.
     olc::MiniAudio ma;
+
+
+    // Manage Touch points
+    olc::vi2d centreScreenPos;
+    olc::vi2d leftCenterScreenPos;
+    olc::vi2d rightCenterScreenPos;
 
 
 public:
@@ -188,6 +191,20 @@ public:
         sprLandScape = new olc::Sprite("images/MountainTest1.jpg");
         decLandScape = new olc::Decal(sprLandScape);
 
+        // Manage Touch points
+        centreScreenPos = GetScreenSize();
+        centreScreenPos.x = centreScreenPos.x / 2;
+        centreScreenPos.y = centreScreenPos.y / 2;
+
+        leftCenterScreenPos = GetScreenSize();
+        leftCenterScreenPos.x = leftCenterScreenPos.x / 100 * 25; //TODO remove magic numbers
+        leftCenterScreenPos.y = leftCenterScreenPos.y / 2;
+
+        rightCenterScreenPos = GetScreenSize();
+        rightCenterScreenPos.x = rightCenterScreenPos.x / 100 * 75;
+        rightCenterScreenPos.y = rightCenterScreenPos.y / 2;
+
+
         return true;
     }
 
@@ -262,24 +279,61 @@ public:
         vecMessages.push_back(defaultTouch);
 
         // New code:
+        olc::vf3d  vf3Target = {0,0,1};
+
         olc::mf4d m1, m2, m3, m4;
 
-        // Manage Touch points
-        olc::vi2d centreScreenPos = GetScreenSize();
-        centreScreenPos.x = centreScreenPos.x / 2;
-        centreScreenPos.y = centreScreenPos.y / 2;
+
+        m1.translate(vf3Camera);        // first we move to the new location
+        m3.translate(0.0, -10.0, 0.0);  // Add our offset
+        m1.rotateY(fTheta);             // Rotate the camera left/right
+        matWorld = m1 * m3;             // Get our new view point
+
+        m2.rotateX(fYaw);                       // Second rotate camera Up/Down
+        vf3LookDir = m2 * vf3Target;            // Get our new direction
+        vf3Target = vf3Camera + vf3LookDir;     // Set our target
+
+        matView.pointAt(vf3Camera, vf3Target, vf3Up);   // Point at our Target
+
+        ClearBuffer(olc::CYAN, true);
+
+
+        HW3D_Projection(matProject.m);
+
+        // Lighting
+        for (size_t i = 0; i < meshMountain.pos.size(); i += 3)
+        {
+            const auto& p0 = meshMountain.pos[i + 0];
+            const auto& p1 = meshMountain.pos[i + 1];
+            const auto& p2 = meshMountain.pos[i + 2];
+
+            olc::vf3d vCross = olc::vf3d(p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]).cross(olc::vf3d(p2[0] - p0[0], p2[1] - p0[1], p2[2] - p0[2])).norm();
+
+            olc::vf3d vLight = olc::vf3d(1.0f, 1.0f, 1.0f).norm();
+
+            float illum = std::clamp(vCross.dot(vLight), 0.0f, 1.0f) * 0.6f + 0.4f;
+            meshMountain.col[i + 0] = olc::PixelF(illum, illum, illum, 1.0f);
+            meshMountain.col[i + 1] = olc::PixelF(illum, illum, illum, 1.0f);
+            meshMountain.col[i + 2] = olc::PixelF(illum, illum, illum, 1.0f);
+        }
+
+
+        HW3D_DrawLine((matView * matWorld).m, { 0.0f, 0.0f, 0.0f }, { 100.0f, 100.0f, 100.0f }, olc::RED);
+
+        HW3D_DrawLineBox((matView * matWorld).m, { 0.0f, 0.0f, 0.0f }, { 10.0f, 10.0f, 10.0f }, olc::YELLOW);
+
+
+        HW3D_DrawObject((matView * matWorld).m, decLandScape, meshMountain.layout, meshMountain.pos, meshMountain.uv, meshMountain.col);
+
+        // Make sure we have not botched 2D Decals
+        DrawDecal(GetMousePos(), gfx1.Decal());
+
+        // Draw Touch point positions
         DrawTargetPointer(centreScreenPos, 50, 10);
-
-        olc::vi2d leftCenterScreenPos = GetScreenSize();
-        leftCenterScreenPos.x = leftCenterScreenPos.x / 100 * 25; //TODO remove magic numbers
-        leftCenterScreenPos.y = leftCenterScreenPos.y / 2;
         DrawTargetPointer(leftCenterScreenPos, 50, 10, olc::GREEN);
-
-        olc::vi2d rightCenterScreenPos = GetScreenSize();
-        rightCenterScreenPos.x = rightCenterScreenPos.x / 100 * 75;
-        rightCenterScreenPos.y = rightCenterScreenPos.y / 2;
         DrawTargetPointer(rightCenterScreenPos, 50, 10, olc::RED);
 
+        // End new code
 
         // Touch 1 handles forward and backwards only
         if (GetTouch(1).bHeld)
@@ -327,91 +381,62 @@ public:
 
         }
 
-        // Touch zeros (single touch) handles direction
+
+        // Touch zeros (single touch) handles Camera look direction
         if (GetTouch(0).bHeld)
         {
             DrawLine(leftCenterScreenPos, GetTouchPos(), olc::GREEN, 0xF0F0F0F0);
             DrawTargetPointer(GetTouchPos(), 50, 10, olc::GREEN);
 
             // We know the Right Center point we need to compare our positions
-
-            //auto test = (((float)leftCenterScreenPos.x / 100)*80);
-            //auto newX = GetTouchX(0);
             // Looking Right
             if ((float)GetTouchX(0) > (((float)leftCenterScreenPos.x / 100)*130) )
             {
-                //vf3LookDir.x -= 0.5f * fElapsedTime;
+                fTheta -= 1.0f * fElapsedTime;
+
+
             }
 
             // Looking Left
             if ((float)GetTouchX(0) < (((float)leftCenterScreenPos.x / 100)*70))
             {
-                //vf3LookDir.x+= 0.5f * fElapsedTime;
+                fTheta += 1.0f * fElapsedTime;
+
+
             }
 
             // Looking Up
             if ((float)GetTouchY(0) < (((float)leftCenterScreenPos.y / 100)*70))
             {
-                //vf3LookDir.y -= 0.5f * fElapsedTime;
+                fYaw -= 1.0f * fElapsedTime;
+
             }
 
             // Looking Down
             if ((float)GetTouchY(0) > (((float)leftCenterScreenPos.y / 100)*130))
             {
-                //vf3LookDir.y += 0.5f * fElapsedTime;
+                fYaw += 1.0f * fElapsedTime;
+
+
+            }
+
+        } else
+        {
+            // Move the camera back to centre, stops the dizzies!
+            if(fYaw > -0.01f && fYaw < 0.01f)
+            {
+                fYaw =0.0f;
+            }
+            if(fYaw >= 0.01)
+            {
+                fYaw -= 0.5f * fElapsedTime;
+            }
+            if(fYaw <= -0.01)
+            {
+                fYaw += 0.5f * fElapsedTime;
             }
 
         }
-
-        // Order in import
-
-        m1.translate(vf3Camera); // first we move to the new location
-        m2.translate(vf3Camera); // Move the look position to the camera position
-
-        // Still not sure why these are reversed... TODO: Check engine code
-        // m2.rotateY(vf3LookDir.x);
-        //m2.rotateX(vf3LookDir.y);
-        //m2.rotateX(vf3LookDir.y);
-        //m2.rotateZ(vf3Camera.z);
-
-
-        m3.translate(0.0, -10.0, 0.0);
-        matWorld = m3 * m1 * m2;
-
-        ClearBuffer(olc::CYAN, true);
-
-
-        HW3D_Projection(matProject.m);
-
-        for (size_t i = 0; i < meshMountain.pos.size(); i += 3)
-        {
-            const auto& p0 = meshMountain.pos[i + 0];
-            const auto& p1 = meshMountain.pos[i + 1];
-            const auto& p2 = meshMountain.pos[i + 2];
-
-            olc::vf3d vCross = olc::vf3d(p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]).cross(olc::vf3d(p2[0] - p0[0], p2[1] - p0[1], p2[2] - p0[2])).norm();
-
-            olc::vf3d vLight = olc::vf3d(1.0f, 1.0f, 1.0f).norm();
-
-            float illum = std::clamp(vCross.dot(vLight), 0.0f, 1.0f) * 0.6f + 0.4f;
-            meshMountain.col[i + 0] = olc::PixelF(illum, illum, illum, 1.0f);
-            meshMountain.col[i + 1] = olc::PixelF(illum, illum, illum, 1.0f);
-            meshMountain.col[i + 2] = olc::PixelF(illum, illum, illum, 1.0f);
-        }
-
-
-        HW3D_DrawLine((matView * matWorld).m, { 0.0f, 0.0f, 0.0f }, { 100.0f, 100.0f, 100.0f }, olc::RED);
-
-        HW3D_DrawLineBox((matView * matWorld).m, { 0.0f, 0.0f, 0.0f }, { 10.0f, 10.0f, 10.0f }, olc::YELLOW);
-
-
-        HW3D_DrawObject((matView * matWorld).m, decLandScape, meshMountain.layout, meshMountain.pos, meshMountain.uv, meshMountain.col);
-
-        // Make sure we have not botched 2D Decals
-        DrawDecal(GetMousePos(), gfx1.Decal());
-
-        // End new code
-
 
 
 
