@@ -281,16 +281,18 @@ public:
         // New code:
         olc::vf3d  vf3Target = {0,0,1};
 
-        olc::mf4d m1, m2, m3, m4;
+        olc::mf4d mMovement, mYaw, mOffset, mCollision;
 
+        mMovement.translate(vf3Camera);        // first we move to the new location
+        mOffset.translate(0.0, -10.0, 0.0);     // Add our offset
+        mMovement.rotateY(fTheta);             // Rotate the camera left/right
+        matWorld = mMovement * mOffset;        // Get our new view point
+        //TODO: Add mCollision
+        //mCollision.translate(0.0f, 0.0f, 0.0f);
+        //matWorld = mMovement * mOffset * mCollision;
 
-        m1.translate(vf3Camera);        // first we move to the new location
-        m3.translate(0.0, -10.0, 0.0);  // Add our offset
-        m1.rotateY(fTheta);             // Rotate the camera left/right
-        matWorld = m1 * m3;             // Get our new view point
-
-        m2.rotateX(fYaw);                       // Second rotate camera Up/Down
-        vf3LookDir = m2 * vf3Target;            // Get our new direction
+        mYaw.rotateX(fYaw);                       // Second rotate camera Up/Down
+        vf3LookDir = mYaw * vf3Target;            // Get our new direction
         vf3Target = vf3Camera + vf3LookDir;     // Set our target
 
         matView.pointAt(vf3Camera, vf3Target, vf3Up);   // Point at our Target
@@ -326,7 +328,7 @@ public:
         HW3D_DrawObject((matView * matWorld).m, decLandScape, meshMountain.layout, meshMountain.pos, meshMountain.uv, meshMountain.col);
 
         // Make sure we have not botched 2D Decals
-        DrawDecal(GetMousePos(), gfx1.Decal());
+        //DrawDecal(GetMousePos(), gfx1.Decal());
 
         // Draw Touch point positions
         DrawTargetPointer(centreScreenPos, 50, 10);
