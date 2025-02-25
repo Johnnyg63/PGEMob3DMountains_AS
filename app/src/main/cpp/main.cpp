@@ -300,6 +300,18 @@ public:
                 vf3Camera.z -= 8.0f * fElapsedTime;
             }
 
+            // Moving Left (Strife)
+            if ((float)GetTouchX(1) > (((float)rightCenterScreenPos.x / 100)*110) )
+            {
+                vf3Camera.x -= 8.0f * fElapsedTime;
+            }
+
+            // Moving Right (Strife)
+            if ((float)GetTouchX(1) < (((float)rightCenterScreenPos.x / 100)*90))
+            {
+                vf3Camera.x+= 8.0f * fElapsedTime;
+            }
+
             // Moving UP
             // TODO: Add code so that only when movement is > 20% execute
             if (GetTouchY(1) < rightCenterScreenPos.y)
@@ -328,25 +340,25 @@ public:
             // Looking Right
             if ((float)GetTouchX(0) > (((float)leftCenterScreenPos.x / 100)*130) )
             {
-                vf3LookDir.x -= 0.5f * fElapsedTime;
+                //vf3LookDir.x -= 0.5f * fElapsedTime;
             }
 
             // Looking Left
             if ((float)GetTouchX(0) < (((float)leftCenterScreenPos.x / 100)*70))
             {
-                vf3LookDir.x+= 0.5f * fElapsedTime;
+                //vf3LookDir.x+= 0.5f * fElapsedTime;
             }
 
             // Looking Up
             if ((float)GetTouchY(0) < (((float)leftCenterScreenPos.y / 100)*70))
             {
-                vf3LookDir.y -= 0.5f * fElapsedTime;
+                //vf3LookDir.y -= 0.5f * fElapsedTime;
             }
 
             // Looking Down
             if ((float)GetTouchY(0) > (((float)leftCenterScreenPos.y / 100)*130))
             {
-                vf3LookDir.y += 0.5f * fElapsedTime;
+                //vf3LookDir.y += 0.5f * fElapsedTime;
             }
 
         }
@@ -357,7 +369,7 @@ public:
         m2.translate(vf3Camera); // Move the look position to the camera position
 
         // Still not sure why these are reversed... TODO: Check engine code
-        m2.rotateY(vf3LookDir.x);
+        // m2.rotateY(vf3LookDir.x);
         //m2.rotateX(vf3LookDir.y);
         //m2.rotateX(vf3LookDir.y);
         //m2.rotateZ(vf3Camera.z);
@@ -392,7 +404,7 @@ public:
 
         HW3D_DrawLineBox((matView * matWorld).m, { 0.0f, 0.0f, 0.0f }, { 10.0f, 10.0f, 10.0f }, olc::YELLOW);
 
-        // TODO: Add mesh decal (nullptr)
+
         HW3D_DrawObject((matView * matWorld).m, decLandScape, meshMountain.layout, meshMountain.pos, meshMountain.uv, meshMountain.col);
 
         // Make sure we have not botched 2D Decals
