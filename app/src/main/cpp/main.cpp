@@ -408,14 +408,16 @@ public:
             // Looking Up
             if ((float)GetTouchY(0) < (((float)leftCenterScreenPos.y / 100)*70))
             {
-                fYaw -= 1.0f * fElapsedTime;
+                fYaw -= 0.5f * fElapsedTime;
+                if(fYaw < -1.0f) fYaw = -1.0f;
 
             }
 
             // Looking Down
             if ((float)GetTouchY(0) > (((float)leftCenterScreenPos.y / 100)*130))
             {
-                fYaw += 1.0f * fElapsedTime;
+                fYaw += 0.5f * fElapsedTime;
+                if(fYaw > 1.0f) fYaw = 1.0f;
 
 
             }
