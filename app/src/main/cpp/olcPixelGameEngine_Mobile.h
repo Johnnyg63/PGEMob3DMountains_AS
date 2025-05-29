@@ -3825,6 +3825,7 @@ namespace olc {
         std::vector<LayerDesc> vLayers;
         uint8_t		nTargetLayer = 0;
         uint32_t	nLastFPS = 0;
+        bool        bManualRenderEnable = false;
         bool        bPixelCohesion = false;
         DecalMode   nDecalMode = DecalMode::NORMAL;
         DecalStructure nDecalStructure = DecalStructure::FAN;
@@ -4352,6 +4353,7 @@ namespace olc
     typedef void CALLSTYLE locUniform1f_t(GLint location, GLfloat v0);
     typedef void CALLSTYLE locUniform1i_t(GLint location, GLint v0);
     typedef void CALLSTYLE locUniform2fv_t(GLint location, GLsizei count, const GLfloat* value);
+    typedef void CALLSTYLE locUniform4fv_t(GLint location, GLsizei count, const GLfloat* value);
     typedef void CALLSTYLE locUniformMatrix4fv_t(GLint location, GLsizei count, GLboolean trasnpose, const GLfloat* value);
     typedef void CALLSTYLE locActiveTexture_t(GLenum texture);
     typedef void CALLSTYLE locGenFrameBuffers_t(GLsizei n, GLuint* ids);
@@ -4981,7 +4983,7 @@ namespace olc {
     }
 
 
-    olc::rcode PixelGameEngine::Construct(int32_t screen_w, int32_t screen_h, int32_t pixel_w, int32_t pixel_h, bool full_screen, bool vsync, bool cohesion)
+    olc::rcode PixelGameEngine::Construct(int32_t screen_w, int32_t screen_h, int32_t pixel_w, int32_t pixel_h, bool full_screen, bool vsync, bool cohesion, bool realwindow)
     {
 
 #if defined (__APPLE__)
@@ -9346,6 +9348,7 @@ namespace olc {
         locGetUniformLocation_t* locGetUniformLocation = nullptr;
         locUniformMatrix4fv_t* locUniformMatrix4fv = nullptr;
         locUniform1i_t* locUniform1i = nullptr;
+        locUniform4fv_t* locUniform4fv = nullptr;
 
         uint32_t m_nFS = 0;
         uint32_t m_nVS = 0;
@@ -9454,6 +9457,7 @@ namespace olc {
             locUseProgram = OGL_LOAD(locUseProgram_t, glUseProgram);
             locGetShaderInfoLog = OGL_LOAD(locGetShaderInfoLog_t, glGetShaderInfoLog);
             locUniform1i = OGL_LOAD(locUniform1i_t, glUniform1i);
+            locUniform4fv = OGL_LOAD(locUniform4fv_t, glUniform4fv);
             locUniformMatrix4fv = OGL_LOAD(locUniformMatrix4fv_t, glUniformMatrix4fv);
             locGetUniformLocation = OGL_LOAD(locGetUniformLocation_t, glGetUniformLocation);
 
@@ -9912,6 +9916,7 @@ namespace olc {
         locGetUniformLocation_t* locGetUniformLocation = nullptr;
         locUniformMatrix4fv_t* locUniformMatrix4fv = nullptr;
         locUniform1i_t* locUniform1i = nullptr;
+        locUniform4fv_t* locUniform4fv = nullptr;
 
         uint32_t m_nFS = 0;
         GLsizei m_nShaderSourceCount = 1;
@@ -10086,6 +10091,7 @@ namespace olc {
             locUseProgram = OGL_LOAD(locUseProgram_t, glUseProgram);
             locGetShaderInfoLog = OGL_LOAD(locGetShaderInfoLog_t, glGetShaderInfoLog);
             locUniform1i = OGL_LOAD(locUniform1i_t, glUniform1i);
+            locUniform4fv = OGL_LOAD(locUniform4fv_t, glUniform4fv);
             locUniformMatrix4fv = OGL_LOAD(locUniformMatrix4fv_t, glUniformMatrix4fv);
             locGetUniformLocation = OGL_LOAD(locGetUniformLocation_t, glGetUniformLocation);
 
@@ -10271,6 +10277,7 @@ namespace olc {
 			locUseProgram = OGL_LOAD(locUseProgram_t, glUseProgram);
 			locGetShaderInfoLog = OGL_LOAD(locGetShaderInfoLog_t, glGetShaderInfoLog);
 			locUniform1i = OGL_LOAD(locUniform1i_t, glUniform1i);
+            locUniform4fv = OGL_LOAD(locUniform4fv_t, glUniform4fv);
 			locUniformMatrix4fv = OGL_LOAD(locUniformMatrix4fv_t, glUniformMatrix4fv);
 			locGetUniformLocation = OGL_LOAD(locGetUniformLocation_t, glGetUniformLocation);
 
