@@ -1,8 +1,8 @@
 
 //////////////////////////////////////////////////////////////////
-// Pixel Game Engine Mobile Release 2.2.X,                      //
-// John Galvin aka Johnngy63: 10-Jan-2025                       //
-// New Support for 3D iOS sensors not supported yet      //
+// Pixel Game Engine Mobile Release 2.2.9,                      //
+// John Galvin aka Johnngy63: 14-Jun-2025                       //
+// New Support for 3D iOS sensors not supported yet             //
 // Please report all bugs to https://discord.com/invite/WhwHUMV //
 // Or on Github: https://github.com/Johnnyg63					//
 //////////////////////////////////////////////////////////////////
@@ -33,7 +33,6 @@
 
 #define OLC_PGE_APPLICATION
 #define OLC_IMAGE_STB
-#define OLC_ENABLE_EXPERIMENTAL
 #include "utilities/olcUTIL_Hardware3D.h"
 #include "olcPixelGameEngine_Mobile.h"
 
@@ -61,21 +60,34 @@ public:
     olc::utils::hw3d::mesh meshMountain;
     olc::Renderable gfx1;
 
-    olc::vf3d vf3Up = {0.0f, 1.0f, 0.0f};           // vf3d up direction
-    olc::vf3d vf3Camera = {0.0f, 0.0f, 0.0f};       // vf3d camera direction
-    olc::vf3d vf3LookDir = { 0.0f, 0.0f, 1.0f };    // vf3d look direction
-    olc::vf3d vf3Forward = {0.0f, 0.0f, 0.0f};      // vf3d Forward direction
+    olc::vf3d vf3dUp = { 0.0f, 1.0f, 0.0f };                // vf3d up direction
+    olc::vf3d vf3dCamera = { -5.0f, 10.5f, -10.0f };         // vf3d camera direction
+    olc::vf3d vf3dLookDir = { 0.0f, 0.0f, 1.0f };           // vf3d look direction
+    olc::vf3d vf3dForward = { 0.0f, 0.0f, 0.0f };           // vf3d Forward direction
+    olc::vf3d vf3dOffset = { -5.0f, 10.5f, -10.0f };         // vf3d Offset
+    olc::vf3d vf3dSunLocation = { 100.0f, 100.0f, 100.0f }; // vf3d Sun Location
 
-    float fYaw = 0.0f;		// FPS Camera rotation in XZ plane
-    float fTheta = 0.0f;	// Spins World transform
+    float fYaw = 0.0f;		    // FPS Camera rotation in X plane
+    float fYawRoC = 1.0f;	    // fYaw Rate of Change Look Up/Down
+    float fTheta = 0.0f;	    // Spins World transform
+    float fThetaRoC = 1.5f;	    // fTheta Rate of Change Spin Left/Right
+    float fStrifeRoC = 8.5f;    // Strife Rate of Change, thanks: #Boguslavv
+    float fForwardRoC = 8.0f;   // Forward/Backwards Rate of Change
+
+    float fSphereRoC = 0.5f;    // Sphere Rate of Change
+    float fSphereRotationY = -1.57079633; // Sphere start Y rotation position
+
+    float fJump = vf3dOffset.y;     // Monitors jump height so we can land again
+    float fJumpRoC = 4.0f;	// fTheta Rate of Change
 
 
     /* Vectors */
     std::vector<std::string> vecMessages;
     /* END Vectors*/
 
-    int nFrameCount = 0;
-    float nStep = 20.0f;
+    uint32_t nFrameCount = 0;
+    float fStep = 20.0f;
+    olc::vf2d vf2MessPos = { 10.0f, 10.0f };
 
     /* Sprites */
     olc::Sprite* sprTouchTester = nullptr;
@@ -89,6 +101,26 @@ public:
     olc::Decal* decLandScape = nullptr;
     /* End Decals */
 
+    /* Renders */
+    olc::Renderable renTestCube;
+    olc::Renderable renBrick;
+    olc::Renderable renEarth;
+    olc::Renderable renSkyCube;
+    /* End Renders */
+
+
+
+
+// 3D Camera
+    olc::utils::hw3d::Camera3D Cam3D;
+
+    // Sanity Cube
+    olc::utils::hw3d::mesh matSanityCube;
+    olc::utils::hw3d::mesh matSkyCube;
+    olc::utils::hw3d::mesh matTriangle;
+    olc::utils::hw3d::mesh matPyramid;
+    olc::utils::hw3d::mesh mat4SPyramid;
+    olc::utils::hw3d::mesh matSphere;
 
     /* Sensors */
     std::vector<olc::SensorInformation> vecSensorInfos;
@@ -108,11 +140,12 @@ public:
     // The instance of the audio engine, no fancy config required.
     olc::MiniAudio ma;
 
-
     // Manage Touch points
     olc::vi2d centreScreenPos;
     olc::vi2d leftCenterScreenPos;
     olc::vi2d rightCenterScreenPos;
+
+
 
 
 public:
@@ -134,13 +167,12 @@ public:
         float f = 1000.0f;
         float n = 0.1f;
 
-        matProject(0, 0) = fAspect; matProject(0, 1) = 0.0f; matProject(0, 2) = 0.0f;	              matProject(0, 3) = 0.0f;
-        matProject(1, 0) = 0.0f;    matProject(1, 1) = 1;    matProject(1, 2) = 0.0f;                 matProject(1, 3) = 0.0f;
-        matProject(2, 0) = 0.0f;    matProject(2, 1) = 0.0f; matProject(2, 2) = -(f / (f - n));       matProject(2, 3) = -1.0f;
-        matProject(3, 0) = 0.0f;    matProject(3, 1) = 0.0f; matProject(3, 2) = -((f * n) / (f - n)); matProject(3, 3) = 0.0f;
-
         matWorld.identity();
         matView.identity();
+
+        Cam3D.SetScreenSize(GetScreenSize());
+        Cam3D.SetClippingPlanes(n, f);
+        Cam3D.SetFieldOfView(S);
 
         /*
          * Loading object (blender. mp3 etc) files is different on the PGE Mobile to PGE
@@ -159,7 +191,7 @@ public:
 
         // 2: Now we need to extract the file from compress storage to usable store
         olc::rcode fileRes = olc::filehandler->ExtractFileFromAssets("objectfiles/mountains.obj", strObjectFileFullPath);
-        // Note for iOS use:
+        // Note for iOS use: TODO, add fileHander path as it is different to Android
 
         // 3 Use the olc::rcode to check if everything worked
         switch (fileRes) {
@@ -188,6 +220,7 @@ public:
         sprOLCPGEMobLogo = new olc::Sprite("images/olcpgemobilelogo.png");
         decOLCPGEMobLogo = new olc::Decal(sprOLCPGEMobLogo);
 
+        // TODO: Change this to a renederable
         sprLandScape = new olc::Sprite("images/MountainTest1.jpg");
         decLandScape = new olc::Decal(sprLandScape);
 
@@ -233,74 +266,39 @@ public:
 
     }
 
-    float fThetaX = 0;
-    float fThetaY = 0;
-    float fThetaZ = 0;
-    //float fThetaY = 0;
-
-    float fLightTime = 0.0f;
-
     bool OnUserUpdate(float fElapsedTime) override {
 
         SetDrawTarget(nullptr);
-
         Clear(olc::BLUE);
-
-        nFrameCount = (int32_t)GetFPS();
-
-        std::string sLineBreak = "-------------------------";
-
-        std::string sMessage = "OneLoneCoder.com";
-        vecMessages.push_back(sMessage);
-
-        sMessage = "PGE Mobile Release 2.2.X";
-        vecMessages.push_back(sMessage);
-
-        sMessage = "Now With 3D Support";
-        vecMessages.push_back(sMessage);
-
-        sMessage = "NOTE: Android FPS = CPU FPS, iOS = GPU FPS";
-        vecMessages.push_back(sMessage);
-
-        sMessage = sAppName + " - FPS: " + std::to_string(nFrameCount);
-        vecMessages.push_back(sMessage);
-
-        sMessage = "Sound Copyright: https://pixabay.com/users/shidenbeatsmusic-25676252/";
-        vecMessages.push_back(sMessage);
-
-        sMessage = "---";
-        vecMessages.push_back(sMessage);
-
-
-        // Get the default touch point
-        // This is always Index 0 and first touch point
-        olc::vi2d defaultTouchPos = GetTouchPos();
-        std::string defaultTouch = "Default Touch 0:  X: " + std::to_string(defaultTouchPos.x) + " Y: " + std::to_string(defaultTouchPos.y);
-        vecMessages.push_back(defaultTouch);
-
         // New code:
         olc::vf3d  vf3Target = {0,0,1};
 
-        olc::mf4d mMovement, mYaw, mOffset, mCollision;
+        olc::mf4d mRotationX, mRotationY, mRotationZ;  // Rotation Matrices
+        olc::mf4d mPosition, mCollision;                // Position and Collision Matrices
+        olc::mf4d mMovement, mOffset;                   // Movement and Offset Matrices
 
-        mMovement.translate(vf3Camera);        // first we move to the new location
-        mOffset.translate(0.0, -10.0, 0.0);     // Add our offset
-        mMovement.rotateY(fTheta);             // Rotate the camera left/right
-        matWorld = mMovement * mOffset;        // Get our new view point
-        //TODO: Add mCollision
-        //mCollision.translate(0.0f, 0.0f, 0.0f);
-        //matWorld = mMovement * mOffset * mCollision;
+        // Update our camera position first, as this is what everything else is base upon
+        // Create a "Point At"
+        olc::vf3d vf3dTarget = { 0,0,1 };
 
-        mYaw.rotateX(fYaw);                       // Second rotate camera Up/Down
-        vf3LookDir = mYaw * vf3Target;            // Get our new direction
-        vf3Target = vf3Camera + vf3LookDir;     // Set our target
+        mRotationY.rotateY(fTheta);  // Left/Right
+        mRotationX.rotateX(fYaw);    // Up/Down
 
-        matView.pointAt(vf3Camera, vf3Target, vf3Up);   // Point at our Target
+        vf3dLookDir = mRotationY * mRotationX * vf3dTarget;   // Left-Right * Up-Down
+        vf3dTarget = vf3dCamera + vf3dLookDir;
 
-        ClearBuffer(olc::CYAN, true);
+        Cam3D.SetPosition(vf3dCamera);
+        Cam3D.SetTarget(vf3dTarget);
+        Cam3D.Update();
+        matWorld = Cam3D.GetViewMatrix();
+
+        // Manage forward / backwards
+        vf3dForward = vf3dLookDir * (fForwardRoC * fElapsedTime);
+
+        ClearBuffer(olc::CYAN, true); // Clear the buffer folks
 
 
-        HW3D_Projection(matProject.m);
+        HW3D_Projection(Cam3D.GetProjectionMatrix().m);
 
         // Lighting
         for (size_t i = 0; i < meshMountain.pos.size(); i += 3)
@@ -319,17 +317,34 @@ public:
             meshMountain.col[i + 2] = olc::PixelF(illum, illum, illum, 1.0f);
         }
 
+        // Draw a line
+        HW3D_DrawLine((matWorld).m, { 0.0f, 0.0f, 0.0f }, { 100.0f, 100.0f, 100.0f }, olc::RED);
 
-        HW3D_DrawLine((matView * matWorld).m, { 0.0f, 0.0f, 0.0f }, { 100.0f, 100.0f, 100.0f }, olc::RED);
+        // Draw a Box
+        HW3D_DrawLineBox((matWorld).m, { 0.0f, 0.0f, 0.0f }, { 100.0f, 100.0f, 100.0f }, olc::YELLOW);
 
-        HW3D_DrawLineBox((matView * matWorld).m, { 0.0f, 0.0f, 0.0f }, { 10.0f, 10.0f, 10.0f }, olc::YELLOW);
+        // Draw the world
+        HW3D_DrawObject((matWorld).m, decLandScape, meshMountain.layout, meshMountain.pos, meshMountain.uv, meshMountain.col);
+
+        // End new code
+
+        UpdateCamByUserInput(fElapsedTime);
+
+        DisplayMessages();
+
+        // Draw Logo
+        DrawDecal({ 5.0f, (float)ScreenHeight() - 100 }, decOLCPGEMobLogo, { 0.5f, 0.5f });
 
 
-        HW3D_DrawObject((matView * matWorld).m, decLandScape, meshMountain.layout, meshMountain.pos, meshMountain.uv, meshMountain.col);
+        return true;
+    }
 
-        // Make sure we have not botched 2D Decals
-        //DrawDecal(GetMousePos(), gfx1.Decal());
-
+    /*
+    * Updates the cam position by user input
+    * Mouse/Touch/Keyboard
+    */
+    void UpdateCamByUserInput(float fElapsedTime)
+    {
         // Draw Touch point positions
         DrawTargetPointer(centreScreenPos, 50, 10);
         DrawTargetPointer(leftCenterScreenPos, 50, 10, olc::GREEN);
@@ -347,25 +362,29 @@ public:
             // Moving Forward
             if ((float)GetTouchY(1) < (((float)rightCenterScreenPos.y /100)*70))
             {
-                vf3Camera.z += 8.0f * fElapsedTime;
+                //vf3dCamera.z += fForwardRoC * fElapsedTime;
+                vf3dCamera += vf3dForward;
             }
 
             // Moving Backward
             if ((float)GetTouchY(1) > (((float)rightCenterScreenPos.y /100)*130))
             {
-                vf3Camera.z -= 8.0f * fElapsedTime;
+                //vf3dCamera.z -= fForwardRoC * fElapsedTime;
+                vf3dCamera -= vf3dForward;
             }
 
             // Moving Left (Strife)
             if ((float)GetTouchX(1) > (((float)rightCenterScreenPos.x / 100)*110) )
             {
-                vf3Camera.x -= 8.0f * fElapsedTime;
+                vf3dCamera.x += cos(fTheta) * fStrifeRoC * fElapsedTime;
+                vf3dCamera.z += sin(fTheta) * fStrifeRoC * fElapsedTime;
             }
 
             // Moving Right (Strife)
             if ((float)GetTouchX(1) < (((float)rightCenterScreenPos.x / 100)*90))
             {
-                vf3Camera.x+= 8.0f * fElapsedTime;
+                vf3dCamera.x -= cos(fTheta) * fStrifeRoC * fElapsedTime;
+                vf3dCamera.z -= sin(fTheta) * fStrifeRoC * fElapsedTime;
             }
 
             // Moving UP
@@ -394,15 +413,14 @@ public:
             // Looking Right
             if ((float)GetTouchX(0) > (((float)leftCenterScreenPos.x / 100)*130) )
             {
-                fTheta -= 1.0f * fElapsedTime;
-
+                fTheta -= fThetaRoC * fElapsedTime;
 
             }
 
             // Looking Left
             if ((float)GetTouchX(0) < (((float)leftCenterScreenPos.x / 100)*70))
             {
-                fTheta += 1.0f * fElapsedTime;
+                fTheta += fThetaRoC * fElapsedTime;
 
 
             }
@@ -410,7 +428,7 @@ public:
             // Looking Up
             if ((float)GetTouchY(0) < (((float)leftCenterScreenPos.y / 100)*70))
             {
-                fYaw -= 0.5f * fElapsedTime;
+                fYaw -= fYawRoC * fElapsedTime;
                 if(fYaw < -1.0f) fYaw = -1.0f;
 
             }
@@ -418,7 +436,7 @@ public:
             // Looking Down
             if ((float)GetTouchY(0) > (((float)leftCenterScreenPos.y / 100)*130))
             {
-                fYaw += 0.5f * fElapsedTime;
+                fYaw += fYawRoC * fElapsedTime;
                 if(fYaw > 1.0f) fYaw = 1.0f;
 
 
@@ -433,32 +451,85 @@ public:
             }
             if(fYaw >= 0.01)
             {
-                fYaw -= 0.5f * fElapsedTime;
+                fYaw -= fYawRoC * fElapsedTime;
             }
             if(fYaw <= -0.01)
             {
-                fYaw += 0.5f * fElapsedTime;
+                fYaw += fYawRoC * fElapsedTime;
             }
 
         }
 
 
+    }
 
 
-        nStep = 10.0f;
+    /*
+    * Displays messages on the screen
+    */
+    void DisplayMessages()
+    {
+        nFrameCount = (int32_t)GetFPS();
+
+        std::string sLineBreak = "-------------------------";
+        vecMessages.push_back(sLineBreak);
+        std::string sMessage = "OneLoneCoder.com";
+        vecMessages.push_back(sMessage);
+
+        sMessage = "PGE Mobile Release 2.2.9";
+        vecMessages.push_back(sMessage);
+
+        sMessage = "Now With 3D Support";
+        vecMessages.push_back(sMessage);
+
+        sMessage = "NOTE: Android FPS = CPU FPS, iOS = GPU FPS";
+        vecMessages.push_back(sMessage);
+
+        sMessage = sAppName + " - FPS: " + std::to_string(nFrameCount);
+        vecMessages.push_back(sMessage);
+
+        sMessage = "Sun X: " + std::to_string(vf3dSunLocation.x)
+                + " Sun Y: " + std::to_string(vf3dSunLocation.y)
+                + " Sun Z: " + std::to_string(vf3dSunLocation.z);
+
+        vecMessages.push_back(sMessage);
+
+        sMessage = "Cam X: " + std::to_string(Cam3D.GetPosition().x)
+                + " Cam Y: " + std::to_string(Cam3D.GetPosition().y)
+                + " Cam Z: " + std::to_string(Cam3D.GetPosition().z);
+
+        vecMessages.push_back(sMessage);
+
+        vecMessages.push_back(sLineBreak);
+
+        // We always show TouchPoint 0 as we might need its values for debugging
+        olc::vi2d defaultTouchPos = GetTouchPos();
+        std::string defaultTouch = "Default Touch 0:  X: " + std::to_string(defaultTouchPos.x) + " Y: " + std::to_string(defaultTouchPos.y);
+        vecMessages.push_back(defaultTouch);
+
+        int8_t nTouch = 1;
+
+        while(GetTouch(nTouch).bHeld && nTouch < 6)
+        {
+            defaultTouchPos = GetTouchPos(nTouch);
+            defaultTouch = "Default Touch " + std::to_string(nTouch) + ":  X: " + std::to_string(defaultTouchPos.x) + " Y: " + std::to_string(defaultTouchPos.y);
+            vecMessages.push_back(defaultTouch);
+            nTouch++;
+        }
+
+        vecMessages.push_back(sLineBreak);
+
+
+        fStep = 10;
+        vf2MessPos.y = fStep;
         for (auto& s : vecMessages)
         {
-            DrawStringDecal({20.0f, nStep}, s);
-            //DrawString(20, nStep, s);
-            nStep += 10.0f;
+            DrawStringDecal(vf2MessPos, s);
+            vf2MessPos.y += fStep;
         }
         vecMessages.clear();
 
-        // Draw Logo
-        DrawDecal({ 5.0f, (float)ScreenHeight() - 100 }, decOLCPGEMobLogo, { 0.5f, 0.5f });
 
-
-        return true;
     }
 
     bool OnUserDestroy() override {
